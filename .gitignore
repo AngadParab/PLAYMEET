@@ -1,0 +1,7 @@
+server/node_modules
+server/.env
+server/event.js
+server/scripts
+
+client/node_modules
+client/.env
