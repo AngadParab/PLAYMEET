@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "server",
   "version": "1.0.0",
   "main": "server.js",
@@ -18,7 +18,7 @@
   "dependencies": {
     "@upstash/ratelimit": "^2.0.7",
     "@upstash/redis": "^1.35.6",
-    "bcryptjs": "^3.0.2",
+    "bcryptjs": "^3.0.3",
     "cloudinary": "^1.41.3",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
