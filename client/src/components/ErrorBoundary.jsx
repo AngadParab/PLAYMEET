@@ -71,7 +71,7 @@ class ErrorBoundary extends React.Component {
       timestamp: new Date().toISOString(),
       errorId: this.state.errorId,
       userId: this.getUserId(), // Get user ID if available
-      buildVersion: process.env.REACT_APP_VERSION || 'development'
+      buildVersion: import.meta.env?.MODE || 'development'
     };
 
     // Example: Send to your logging service

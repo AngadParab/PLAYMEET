@@ -4,7 +4,7 @@ import {
   Trophy, ArrowRight, Mail, Phone, MapPin,
   Star, Globe, Users, Calendar,
   Zap, Activity, Target,
-  Shield
+  Shield, Gamepad2
 } from 'lucide-react'
 import {
   FaFacebook as Facebook,
@@ -55,6 +55,27 @@ const Footer = () => {
   const { mode } = useMode();
   const isEsports = mode === 'esports';
 
+
+  const esportsNavigation = [
+    { label: 'Esports Home', path: '/esports', icon: Trophy },
+    { label: 'Tournaments', path: '/esports/tournaments', icon: Trophy },
+    { label: 'Games', path: '/esports/games', icon: Gamepad2 },
+    { label: 'Leaderboard', path: '/esports/leaderboard', icon: Activity },
+    { label: 'Community', path: '/esports/community', icon: Users },
+  ]
+
+  const esportsGames = [
+    { label: 'Valorant', path: '/esports/games', count: '150k+' },
+    { label: 'CS2', path: '/esports/games', count: '120k+' },
+    { label: 'League of Legends', path: '/esports/games', count: '200k+' },
+    { label: 'Dota 2', path: '/esports/games', count: '80k+' },
+    { label: 'Apex Legends', path: '/esports/games', count: '110k+' },
+    { label: 'Rocket League', path: '/esports/games', count: '90k+' },
+  ]
+
+  const activeNavLinks = isEsports ? esportsNavigation : navigationLinks
+  const activePopularItems = isEsports ? esportsGames : popularSports
+
   return (
     <footer className={cn(
       "border-t relative overflow-hidden transition-colors duration-300",
@@ -70,7 +91,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-16">
           {/* Brand Column */}
           <div className="lg:col-span-1 space-y-6">
-            <Link to="/" className="inline-flex items-center gap-2 group">
+            <Link to={isEsports ? "/esports" : "/"} className="inline-flex items-center gap-2 group">
               <span className={cn(
                 "text-2xl font-bold font-orbitron tracking-widest transition-all",
                 isEsports
@@ -82,8 +103,10 @@ const Footer = () => {
             </Link>
 
             <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-              The ultimate platform for sports enthusiasts to discover events,
-              connect with athletes, and build lasting friendships.
+              {isEsports
+                ? "The ultimate competitive gaming platform. Compete in tournaments, join teams, and rise through the ranks."
+                : "The ultimate platform for sports enthusiasts to discover events, connect with athletes, and build lasting friendships."
+              }
             </p>
 
             {/* Contact Info */}
@@ -132,7 +155,7 @@ const Footer = () => {
           <div>
             <h3 className="font-bold font-heading text-foreground mb-6 text-lg">Navigation</h3>
             <ul className="space-y-3">
-              {navigationLinks.map((link) => (
+              {activeNavLinks.map((link) => (
                 <li key={link.path}>
                   <Link
                     to={link.path}
@@ -167,30 +190,32 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Popular Sports */}
+          {/* Popular Sports / Games */}
           <div>
-            <h3 className="font-bold font-heading text-foreground mb-6 text-lg">Popular Sports</h3>
+            <h3 className="font-bold font-heading text-foreground mb-6 text-lg">
+              {isEsports ? "Popular Games" : "Popular Sports"}
+            </h3>
             <div className="space-y-3">
-              {popularSports.map((sport) => (
+              {activePopularItems.map((item) => (
                 <Link
-                  key={sport.path}
-                  to={sport.path}
+                  key={item.label}
+                  to={item.path}
                   className="flex items-center justify-between text-sm group p-2 rounded-lg hover:bg-secondary/50 transition-colors -mx-2"
                 >
                   <span className="text-muted-foreground group-hover:text-foreground transition-colors font-medium">
-                    {sport.label}
+                    {item.label}
                   </span>
                   <Badge variant="secondary" className="text-xs bg-secondary text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                    {sport.count}
+                    {item.count}
                   </Badge>
                 </Link>
               ))}
             </div>
             <Link
-              to="/events"
+              to={isEsports ? "/esports/games" : "/events"}
               className="inline-flex items-center mt-6 text-sm font-semibold text-primary hover:text-primary/80 transition-colors group"
             >
-              Explore All Sports <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              {isEsports ? "Explore All Games" : "Explore All Sports"} <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
         </div>

@@ -2,15 +2,15 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Gamepad2, Users, ArrowRight } from "lucide-react";
+import { Gamepad2, Users, ArrowRight, Trophy } from "lucide-react";
 
 const games = [
-    { name: "Valorant", genre: "Tactical Shooter", players: "125k Active" },
-    { name: "Counter-Strike 2", genre: "Tactical Shooter", players: "300k Active" },
-    { name: "League of Legends", genre: "MOBA", players: "500k Active" },
-    { name: "Dota 2", genre: "MOBA", players: "200k Active" },
-    { name: "Apex Legends", genre: "Battle Royale", players: "150k Active" },
-    { name: "Rocket League", genre: "Sports", players: "80k Active" },
+    { name: "Valorant", genre: "Tactical Shooter", players: "125k Active", image: '/assets/esports/valorant.jpg' },
+    { name: "Counter-Strike 2", genre: "Tactical Shooter", players: "300k Active", image: '/assets/esports/Counter strike 2.jpg' },
+    { name: "League of Legends", genre: "MOBA", players: "500k Active", image: '/assets/esports/Legue Of Legends.jpg' },
+    { name: "Dota 2", genre: "MOBA", players: "200k Active", image: '/assets/esports/dota 2.jpg' },
+    { name: "Apex Legends", genre: "Battle Royale", players: "150k Active", image: '/assets/esports/Apex Legends.jpg' },
+    { name: "Rocket League", genre: "Sports", players: "80k Active", image: '/assets/esports/Rocket Legue.avif' },
 ];
 
 const EsportsGames = () => {
@@ -38,17 +38,34 @@ const EsportsGames = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {games.map((game) => (
-                        <Card key={game.name} className="group border-white/5 bg-white/5 hover:border-purple-500/50 hover:bg-white/10 hover:shadow-[0_0_20px_rgba(147,51,234,0.15)] transition-all duration-300 cursor-pointer backdrop-blur-sm">
-                            <CardContent className="p-6 flex flex-col items-center text-center">
-                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/10 to-cyan-500/10 border border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:from-purple-500/20 group-hover:to-cyan-500/20 transition-all duration-300">
-                                    <Gamepad2 className="w-10 h-10 text-white group-hover:text-cyan-400 transition-colors" />
-                                </div>
-                                <h3 className="font-bold font-heading text-xl text-white mb-1 group-hover:text-cyan-400 transition-colors">{game.name}</h3>
-                                <p className="text-sm text-gray-400 mb-6 font-medium">{game.genre}</p>
+                        <Card key={game.name} className="group border-white/5 bg-white/5 hover:border-purple-500/50 hover:shadow-[0_0_20px_rgba(147,51,234,0.15)] transition-all duration-300 cursor-pointer overflow-hidden relative h-[320px]">
+                            {/* Background Image */}
+                            <div className="absolute inset-0">
+                                <img
+                                    src={game.image}
+                                    alt={game.name}
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 opacity-60 group-hover:opacity-40"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-black/50 to-transparent" />
+                            </div>
 
-                                <div className="w-full mt-auto flex items-center justify-center gap-2 pt-4 border-t border-white/5">
-                                    <Users className="w-4 h-4 text-purple-400" />
-                                    <span className="text-sm text-gray-300">{game.players}</span>
+                            <CardContent className="relative z-10 p-6 flex flex-col h-full justify-end">
+                                <div className="mb-auto">
+                                    <Badge variant="secondary" className="bg-purple-500/20 text-purple-200 border-purple-500/20 backdrop-blur-md">
+                                        {game.genre}
+                                    </Badge>
+                                </div>
+
+                                <h3 className="font-bold font-heading text-2xl text-white mb-2 group-hover:text-cyan-400 transition-colors drop-shadow-md">{game.name}</h3>
+
+                                <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                                        <Users className="w-4 h-4 text-purple-400" />
+                                        <span>{game.players}</span>
+                                    </div>
+                                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-cyan-500/20 group-hover:text-cyan-400 transition-colors">
+                                        <ArrowRight className="w-4 h-4" />
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
