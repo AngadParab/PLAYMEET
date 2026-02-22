@@ -1,58 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Users, Sparkles } from "lucide-react";
+import { Search, Filter, Users, Sparkles, Loader2 } from "lucide-react";
 import GamerCard from "@/components/esports/GamerCard";
+import { useEsports } from "@/context/EsportsContext";
 
 const EsportsPlayers = () => {
-    // Mock Data (mirrored from Athletes.jsx/Esports.jsx)
-    const gamers = [
-        {
-            _id: '1',
-            name: "ViperMain",
-            role: "Controller",
-            location: "Mumbai, India",
-            avatar: { url: null },
-            stats: { rating: 4.8 },
-            gameInfo: {
-                title: "Valorant",
-                rank: "Ascendant 2",
-                kd: "1.24",
-                winRate: "58%"
-            },
-            isOnline: true
-        },
-        {
-            _id: '2',
-            name: "AWP_God",
-            role: "Sniper",
-            location: "Bangalore, India",
-            avatar: { url: null },
-            stats: { rating: 4.5 },
-            gameInfo: {
-                title: "CS2",
-                rank: "Global Elite",
-                kd: "1.5",
-                winRate: "62%"
-            },
-            isOnline: false
-        },
-        {
-            _id: '3',
-            name: "JungleDiff",
-            role: "Jungler",
-            location: "Delhi, India",
-            avatar: { url: null },
-            stats: { rating: 4.2 },
-            gameInfo: {
-                title: "League of Legends",
-                rank: "Diamond I",
-                kd: "3.2 KDA",
-                winRate: "55%"
-            },
-            isOnline: true
-        }
-    ];
+    const { gamers, loading, filters, setFilters, getAllGamers } = useEsports();
+    const [searchInput, setSearchInput] = useState(filters.search || '');
+
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (filters.search !== searchInput) {
+                setFilters({ ...filters, search: searchInput });
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchInput, filters, setFilters]);
+
+    // Fetch gamers when filters change
+    useEffect(() => {
+        getAllGamers(filters, 1);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filters.search, filters.game, filters.rank, filters.region, filters.sortBy]);
 
     return (
         <div className="min-h-screen bg-[#09090b] text-white font-sans selection:bg-purple-500/30">
@@ -81,7 +52,9 @@ const EsportsPlayers = () => {
                         <div className="relative flex-1 md:w-80">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                             <Input
-                                placeholder="Search by name, game, or role..."
+                                placeholder="Search by gamertag..."
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
                                 className="pl-10 h-10 bg-white/5 border-white/10 text-white focus:border-purple-500 focus:ring-purple-500/20 rounded-lg placeholder:text-gray-600"
                             />
                         </div>
@@ -91,13 +64,26 @@ const EsportsPlayers = () => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {gamers.map((gamer) => (
-                        <div key={gamer._id} className="h-full">
-                            <GamerCard athlete={gamer} />
-                        </div>
-                    ))}
-                </div>
+                {loading && gamers.length === 0 ? (
+                    <div className="flex flex-col flex-1 pb-16 justify-center items-center min-h-[300px]">
+                        <Loader2 className="w-8 h-8 animate-spin text-purple-500 mb-4" />
+                        <p className="text-purple-400 font-medium tracking-wide">Initializing Nexus Profiles...</p>
+                    </div>
+                ) : gamers.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {gamers.map((gamer) => (
+                            <div key={gamer._id} className="h-full">
+                                <GamerCard athlete={gamer} />
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="flex flex-col flex-1 pb-16 justify-center items-center min-h-[300px] bg-white/5 rounded-2xl border border-white/10">
+                        <Users className="w-12 h-12 text-purple-500/50 mb-4" />
+                        <p className="text-xl font-bold text-white mb-2">No players found</p>
+                        <p className="text-gray-400 text-center max-w-sm">Try adjusting your filters or search terms to find the gamers you're looking for.</p>
+                    </div>
+                )}
             </div>
         </div>
     );

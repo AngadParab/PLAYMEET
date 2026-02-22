@@ -288,7 +288,10 @@ const eventSchema = new mongoose.Schema(
       allowRatings: { type: Boolean, default: true },
       enableChat: { type: Boolean, default: true },
       trackAttendance: { type: Boolean, default: false }
-    }
+    },
+
+    // Economy
+    pointsAwarded: { type: Boolean, default: false }
   },
   {
     timestamps: true,

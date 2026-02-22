@@ -122,60 +122,96 @@ const userSchema = new mongoose.Schema(
         type: String
       },
     },
-    sportsPreferences: [
-      {
-        sport: {
-          type: String,
-          enum: [
-            "Football",
-            "Basketball",
-            "Tennis",
-            "Running",
-            "Cycling",
-            "Swimming",
-            "Volleyball",
-            "Cricket",
-            "Other",
-          ],
-        },
-        skillLevel: {
-          type: String,
-          enum: ["Beginner", "Intermediate", "Advanced"],
-        },
+    pointsWallet: {
+      type: Number,
+      default: 0,
+    },
+    lifetimePoints: {
+      type: Number,
+      default: 0,
+    },
+    athleteProfile: {
+      bio: {
+        type: String,
+        maxlength: [500, "Bio cannot exceed 500 characters"],
       },
-    ],
-    // achievements: [
-    //   {
-    //     title: String,
-    //     description: String,
-    //     date: Date,
-    //     eventId: {
-    //       type: mongoose.Schema.Types.ObjectId,
-    //       ref: "Event",
-    //     },
-    //   },
-    // ],
-    achievements: [{
-      title: String,
-      description: String,
-      icon: String,
-      category: String,
-      earnedAt: { type: Date, default: Date.now },
-      points: { type: Number, default: 0 }
-    }],
-    location: {
-      city: String,
-      state: String,
-      country: String,
+      location: {
+        city: String,
+        state: String,
+        country: String,
+      },
+      sportsPreferences: [
+        {
+          sport: {
+            type: String,
+            enum: [
+              "Football",
+              "Basketball",
+              "Tennis",
+              "Running",
+              "Cycling",
+              "Swimming",
+              "Volleyball",
+              "Cricket",
+              "Other",
+            ],
+          },
+          skillLevel: {
+            type: String,
+            enum: ["Beginner", "Intermediate", "Advanced"],
+          },
+        },
+      ],
+      physicalAchievements: [{
+        title: String,
+        description: String,
+        icon: String,
+        category: String,
+        earnedAt: { type: Date, default: Date.now },
+        points: { type: Number, default: 0 }
+      }],
+    },
+    esportsProfile: {
+      gamerTag: {
+        type: String,
+        trim: true,
+      },
+      gamingBio: {
+        type: String,
+        maxlength: [500, "Bio cannot exceed 500 characters"],
+      },
+      gameTitles: [
+        {
+          game: {
+            type: String,
+          },
+          skillLevel: {
+            type: String,
+            enum: ["Beginner", "Intermediate", "Advanced", "Pro"],
+          },
+          rank: String,
+        },
+      ],
+      esportsAchievements: [{
+        title: String,
+        description: String,
+        icon: String,
+        category: String,
+        earnedAt: { type: Date, default: Date.now },
+        points: { type: Number, default: 0 }
+      }],
+      connectedAccounts: {
+        steam: String,
+        discord: String,
+        xbox: String,
+        playstation: String,
+        riot: String,
+      },
     },
     socialLinks: {
       facebook: String,
       twitter: String,
       instagram: String,
-    },
-    bio: {
-      type: String,
-      maxlength: [500, "Bio cannot exceed 500 characters"],
     },
     notifications: [notificationSchema],
     participatedEvents: [
@@ -233,11 +269,11 @@ const userSchema = new mongoose.Schema(
     activityLog: [{
       action: {
         type: String,
-        enum: ["event_join", "event_create", "post_create", "venue_review", "achievement_earned"]
       },
       points: Number,
       category: String,
       relatedId: mongoose.Schema.Types.ObjectId,
+      description: String,
       timestamp: { type: Date, default: Date.now }
     }],
 

@@ -23,7 +23,8 @@ import {
   Gamepad2,
   MousePointer2,
   Radio,
-  Gamepad
+  Gamepad,
+  ShoppingBag
 } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
@@ -99,22 +100,22 @@ const Header = () => {
   const unreadNotifications = user?.notifications?.filter((n) => !n.read)?.length || 0
   const isEsports = mode === 'esports'
 
-  // Standard Navigation (Athletes Mode / Default)
   const defaultNavigation = [
     { name: "Home", path: "/home", icon: Home },
     { name: "Events", path: "/events", icon: Calendar },
     { name: "Venues", icon: MapPin, path: "/venues" },
     { name: "Leaderboard", icon: Trophy, path: "/leaderboard" },
+    { name: "Store", icon: ShoppingBag, path: "/store" },
     { name: "Athletes", icon: Search, path: "/athletes" },
     { name: "Community", path: "/community", icon: Users },
   ]
 
-  // Esports Navigation
   const esportsNavigation = [
     { name: "Home", path: "/esports", icon: Home },
     { name: "Tournaments", path: "/esports/tournaments", icon: Trophy },
     { name: "Games", path: "/esports/games", icon: Gamepad2 },
     { name: "Leaderboard", path: "/esports/leaderboard", icon: Activity },
+    { name: "Store", path: "/store", icon: ShoppingBag },
     { name: "Players", path: "/esports/players", icon: User },
     { name: "Community", path: "/esports/community", icon: Users },
   ]

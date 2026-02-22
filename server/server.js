@@ -16,6 +16,7 @@ import leaderboardRoute from './routes/leaderboardRoute.js';
 import venueRoute from './routes/venueRoute.js';
 import tournamentRoute from './routes/tournamentRoutes.js';
 import esportsRoute from './routes/esportsRoute.js';
+import storeRoute from './routes/storeRoute.js';
 
 import connectDB from "./config/db.js";
 import setupSocket from "./config/socket.js";
@@ -86,6 +87,7 @@ app.use("/api/leaderboard", leaderboardRoute);
 app.use("/api/venues", venueRoute);
 app.use("/api/tournaments", tournamentRoute);
 app.use("/api/esports", esportsRoute);
+app.use("/api/store", storeRoute);
 
 // Error handling middleware for rate limiting
 app.use((err, req, res, next) => {

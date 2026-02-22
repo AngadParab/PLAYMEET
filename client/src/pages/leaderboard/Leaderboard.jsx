@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { useAuth } from '@/hooks/useAuth';
+import { useMode } from '@/context/ModeContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -489,8 +490,10 @@ const Leaderboard = () => {
     currentUserPosition
   } = useLeaderboard();
   const { user } = useAuth();
+  const { mode } = useMode();
+  const isEsports = mode === 'esports';
 
-  const [activeCategory, setActiveCategory] = useState('overall');
+  const [activeCategory, setActiveCategory] = useState(isEsports ? 'esports' : 'overall');
   const [timeframe, setTimeframe] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -544,18 +547,30 @@ const Leaderboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
+    <div className={`min-h-screen ${isEsports ? 'bg-[#09090b] text-white font-sans selection:bg-purple-500/30' : 'bg-background'} overflow-hidden relative`}>
+      {/* Dynamic Background */}
+      {isEsports && (
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px]" />
+          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-cyan-600/10 rounded-full blur-[100px]" />
+        </div>
+      )}
+
       {/* Hero Section */}
-      <div className="relative border-b border-border/40 bg-background">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.1),transparent_70%)] pointer-events-none" />
+      <div className={`relative ${isEsports ? 'border-b border-purple-500/20 bg-black/40 backdrop-blur-sm' : 'border-b border-border/40 bg-background'} z-10`}>
+        {!isEsports && (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.1),transparent_70%)] pointer-events-none" />
+          </>
+        )}
 
         <div className="container mx-auto px-4 pt-24 pb-6 lg:pt-28 lg:pb-8 relative">
           <div className="text-center max-w-2xl mx-auto space-y-3">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider"
+              className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${isEsports ? 'bg-purple-600/20 text-purple-400 border border-purple-500/30' : 'bg-primary/10 text-primary'}`}
             >
               <Trophy className="w-4 h-4" />
               Global Rankings
@@ -564,17 +579,19 @@ const Leaderboard = () => {
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight text-foreground"
+              className={`text-3xl md:text-4xl lg:text-5xl font-black tracking-tight ${isEsports ? 'text-white font-heading' : 'text-foreground'}`}
             >
-              Compete. Rise.{' '}
-              <span className="text-primary">Dominate.</span>
+              {isEsports ? "Climb." : "Compete."} {isEsports ? "Conquer." : "Rise."}{' '}
+              <span className={isEsports ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400" : "text-primary"}>
+                {isEsports ? "Ascend." : "Dominate."}
+              </span>
             </motion.h1>
 
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-muted-foreground text-sm max-w-lg mx-auto"
+              className={`${isEsports ? 'text-gray-400' : 'text-muted-foreground'} text-sm max-w-lg mx-auto`}
             >
               Earn points by participating in events, organizing games, and engaging with the community.
             </motion.p>
@@ -583,21 +600,21 @@ const Leaderboard = () => {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
+      <div className="container mx-auto px-4 py-6 max-w-6xl relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: Main Leaderboard */}
           <div className="lg:col-span-2 space-y-4">
             {/* Filters Bar */}
-            <Card className="border-border/50 p-3 shadow-sm">
+            <Card className={`${isEsports ? 'bg-black/40 border-purple-500/20 backdrop-blur-sm' : 'border-border/50'} p-3 shadow-sm`}>
               <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
                 {/* Search */}
                 <div className="relative w-full">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isEsports ? 'text-gray-500' : 'text-muted-foreground'}`} />
                   <Input
                     placeholder="Search athletes..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 pr-3 bg-background border-border/50 rounded-lg h-10 w-full focus:ring-2 focus:ring-primary/20 transition-all"
+                    className={`pl-9 pr-3 h-10 w-full rounded-lg transition-all ${isEsports ? 'bg-white/5 border-white/10 text-white focus:ring-purple-500/50' : 'bg-background border-border/50 focus:ring-2 focus:ring-primary/20'}`}
                   />
                 </div>
 
@@ -605,14 +622,14 @@ const Leaderboard = () => {
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
                   {/* Category Filter */}
                   <Select value={activeCategory} onValueChange={setActiveCategory}>
-                    <SelectTrigger className="w-full sm:w-[140px] bg-background border-border/50 rounded-lg h-10 hover:border-primary/30 transition-colors">
+                    <SelectTrigger className={`w-full sm:w-[140px] h-10 rounded-lg transition-colors ${isEsports ? 'bg-white/5 border-white/10 text-white hover:border-purple-500/50' : 'bg-background border-border/50 hover:border-primary/30'}`}>
                       <div className="flex items-center gap-2 w-full">
                         <SelectValue className="truncate" />
                       </div>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className={isEsports ? "bg-[#09090b] text-white border-white/10" : ""}>
                       {categoryOptions.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value}>
+                        <SelectItem key={opt.value} value={opt.value} className={isEsports ? "hover:bg-white/10 focus:bg-white/10 focus:text-white" : ""}>
                           {opt.label}
                         </SelectItem>
                       ))}
@@ -621,15 +638,15 @@ const Leaderboard = () => {
 
                   {/* Timeframe Filter */}
                   <Select value={timeframe} onValueChange={setTimeframe}>
-                    <SelectTrigger className="w-full sm:w-[140px] bg-background border-border/50 rounded-lg h-10 hover:border-primary/30 transition-colors">
+                    <SelectTrigger className={`w-full sm:w-[140px] h-10 rounded-lg transition-colors ${isEsports ? 'bg-white/5 border-white/10 text-white hover:border-purple-500/50' : 'bg-background border-border/50 hover:border-primary/30'}`}>
                       <div className="flex items-center gap-2 w-full">
                         <SelectValue className="truncate" />
                       </div>
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Time</SelectItem>
-                      <SelectItem value="monthly">This Month</SelectItem>
-                      <SelectItem value="weekly">This Week</SelectItem>
+                    <SelectContent className={isEsports ? "bg-[#09090b] text-white border-white/10" : ""}>
+                      <SelectItem value="all" className={isEsports ? "hover:bg-white/10 focus:bg-white/10 focus:text-white" : ""}>All Time</SelectItem>
+                      <SelectItem value="monthly" className={isEsports ? "hover:bg-white/10 focus:bg-white/10 focus:text-white" : ""}>This Month</SelectItem>
+                      <SelectItem value="weekly" className={isEsports ? "hover:bg-white/10 focus:bg-white/10 focus:text-white" : ""}>This Week</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -639,7 +656,7 @@ const Leaderboard = () => {
                     size="icon"
                     onClick={handleRefresh}
                     disabled={loading}
-                    className="rounded-lg border-border/50 hover:bg-primary/10 hover:border-primary/30 h-10 w-10 flex-shrink-0 transition-all"
+                    className={`h-10 w-10 flex-shrink-0 rounded-lg transition-all ${isEsports ? 'bg-white/5 border-white/10 text-white hover:bg-purple-600/20 hover:border-purple-500/50 hover:text-white' : 'border-border/50 hover:bg-primary/10 hover:border-primary/30'}`}
                     title="Refresh leaderboard"
                   >
                     <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
@@ -655,13 +672,13 @@ const Leaderboard = () => {
               <>
                 {/* Podium */}
                 {topThree.length > 0 && !searchQuery && (
-                  <Card className="border-border/50 p-3 overflow-hidden">
+                  <Card className={`${isEsports ? 'bg-black/40 border-purple-500/20 backdrop-blur-sm' : 'border-border/50'} p-3 overflow-hidden`}>
                     <Podium topThree={topThree} onUserClick={handleUserClick} />
                   </Card>
                 )}
 
                 {/* Leaderboard List */}
-                <Card className="border-border/50 p-3">
+                <Card className={`${isEsports ? 'bg-black/40 border-purple-500/20 backdrop-blur-sm' : 'border-border/50'} p-3`}>
                   <div className="space-y-2">
                     {searchQuery && filteredLeaderboard.length > 0 && (
                       <p className="text-xs text-muted-foreground mb-3 px-1">
@@ -727,13 +744,13 @@ const Leaderboard = () => {
 
             {/* Not Logged In CTA */}
             {!user && (
-              <Card className="border-primary/20 bg-primary/5">
+              <Card className={isEsports ? 'border-purple-500/30 bg-purple-900/10' : 'border-primary/20 bg-primary/5'}>
                 <CardContent className="p-5 text-center">
-                  <h3 className="font-bold text-foreground mb-1">Join the Competition</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
+                  <h3 className={`font-bold mb-1 ${isEsports ? 'text-white' : 'text-foreground'}`}>Join the Competition</h3>
+                  <p className={`text-sm mb-4 ${isEsports ? 'text-gray-400' : 'text-muted-foreground'}`}>
                     Sign in to track your ranking and compete worldwide.
                   </p>
-                  <Button className="w-full" asChild>
+                  <Button className={`w-full ${isEsports ? 'bg-purple-600 hover:bg-cyan-600 text-white' : ''}`} asChild>
                     <Link to="/login">Get Started</Link>
                   </Button>
                 </CardContent>

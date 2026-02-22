@@ -31,13 +31,13 @@ import VenueDetails from './pages/venues/VenueDetails';
 import VenueBooking from './pages/venues/VenueBooking';
 import MyBookings from './pages/venues/MyBookings';
 import Leaderboard from './pages/leaderboard/Leaderboard';
+import Store from './pages/Store';
 // import Community from './pages/community/Community';
 import Athletes from './pages/athletes/Athletes';
 // Esports Pages
 import Esports from './pages/esports/Esports';
 
 import EsportsGames from './pages/esports/EsportsGames';
-import EsportsLeaderboard from './pages/esports/EsportsLeaderboard';
 import EsportsPlayers from './pages/esports/EsportsPlayers';
 import EsportsCommunity from './pages/esports/ServerDiscovery';
 import EsportsHome from './pages/esports/EsportsHome';
@@ -88,6 +88,7 @@ import AdminMessages from './pages/admin/AdminMessages';
 import AdminSettings from './pages/admin/AdminSettings';
 import NotificationsPage from './pages/admin/NotificationPage';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
+import Fulfillment from './pages/admin/Fulfillment';
 // import AdminReports from './pages/admin/AdminReports';
 // import ContentModeration from './pages/admin/ContentModeration';
 // import SystemLogs from './pages/admin/SystemLogs';
@@ -218,6 +219,7 @@ const AppContent = () => {
 
             <Route path="athletes" element={<ProtectedRoute><Athletes /></ProtectedRoute>} />
             <Route path="leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+            <Route path="store" element={<ProtectedRoute><Store /></ProtectedRoute>} />
 
             <Route path="community" element={<ProtectedRoute><Communities /></ProtectedRoute>} />
             <Route path="community/:id" element={<ProtectedRoute><CommunityDetails /></ProtectedRoute>} />
@@ -241,12 +243,12 @@ const AppContent = () => {
               <Route path="tournaments/:id/manage" element={<HostManager />} />
               <Route path="gamers" element={<Esports />} />
               <Route path="games" element={<EsportsGames />} />
-              <Route path="leaderboard" element={<EsportsLeaderboard />} />
+              <Route path="leaderboard" element={<Leaderboard />} />
               <Route path="scrims" element={<div className="text-white p-8">Scrims Page Coming Soon</div>} />
               <Route path="teams" element={<div className="text-white p-8">My Teams Page Coming Soon</div>} />
             </Route>
-            <Route path="esports/players" element={<ProtectedRoute requiredMode="esports"><EsportsPlayers /></ProtectedRoute>} />
-            <Route path="esports/community" element={<ProtectedRoute requiredMode="esports"><EsportsCommunity /></ProtectedRoute>} />
+            <Route path="esports/players" element={<ProtectedRoute requiredMode="esports"><EsportsProvider><EsportsPlayers /></EsportsProvider></ProtectedRoute>} />
+            <Route path="esports/community" element={<ProtectedRoute requiredMode="esports"><EsportsProvider><EsportsCommunity /></EsportsProvider></ProtectedRoute>} />
           </Route>
 
           {/* Admin Routes */}
@@ -265,6 +267,7 @@ const AppContent = () => {
             <Route path="messages" element={<ProtectedRoute adminOnly><AdminMessages /></ProtectedRoute>} />
             <Route path="analytics" element={<ProtectedRoute adminOnly><AdminAnalytics /></ProtectedRoute>} />
             <Route path="settings" element={<ProtectedRoute adminOnly><AdminSettings /></ProtectedRoute>} />
+            <Route path="fulfillment" element={<ProtectedRoute adminOnly><Fulfillment /></ProtectedRoute>} />
           </Route>
 
           {/* Fallback Route */}

@@ -262,10 +262,9 @@ export const updateProfile = async (req, res) => {
       "name",
       "username",
       "email",
-      "bio",
-      "location",
       "socialLinks",
-      "sportsPreferences",
+      "athleteProfile",
+      "esportsProfile"
     ];
 
     const updateFields = Object.keys(updates).filter((key) => allowedUpdates.includes(key));
@@ -298,17 +297,21 @@ export const updateProfile = async (req, res) => {
       return res.status(400).json({ message: "Invalid email format" });
     }
 
-    if (updates.bio && updates.bio.length > 500) {
+    if (updates.athleteProfile && updates.athleteProfile.bio && updates.athleteProfile.bio.length > 500) {
       return res.status(400).json({ message: "Bio cannot exceed 500 characters" });
     }
 
-    if (updates.sportsPreferences) {
-      if (!Array.isArray(updates.sportsPreferences)) {
+    if (updates.esportsProfile && updates.esportsProfile.gamingBio && updates.esportsProfile.gamingBio.length > 500) {
+      return res.status(400).json({ message: "Gaming Bio cannot exceed 500 characters" });
+    }
+
+    if (updates.athleteProfile && updates.athleteProfile.sportsPreferences) {
+      if (!Array.isArray(updates.athleteProfile.sportsPreferences)) {
         return res.status(400).json({ message: "Sports preferences must be an array" });
       }
       const validSports = ["Football", "Basketball", "Tennis", "Running", "Cycling", "Swimming", "Volleyball", "Cricket", "Other"];
       const validLevels = ["Beginner", "Intermediate", "Advanced"];
-      for (const sport of updates.sportsPreferences) {
+      for (const sport of updates.athleteProfile.sportsPreferences) {
         if (!validSports.includes(sport.sport) || !validLevels.includes(sport.skillLevel)) {
           return res.status(400).json({ message: "Invalid sport or skill level" });
         }

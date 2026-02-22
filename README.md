@@ -1,122 +1,73 @@
 # PLAYMEET
 
-A full-stack sports event management platform built with the MERN stack, enabling users to create, discover, and participate in sports events while connecting with fellow athletes.
+PLAYMEET is a full-stack, dual-ecosystem matchmaking and event management platform built using the MERN stack. Designed to bridge the gap between traditional athletic activities and digital competitive gaming, the platform manages complex user relationships, global points economies, and real-time connectivity between players.
+
+## Core Architecture & Features
+
+Based on the underlying database schemas and application structure, PLAYMEET is split into several major functional domains:
+
+### 🌐 Dual-Ecosystem Profiles
+Users are not limited to one domain. The platform supports dedicated profiles for different playstyles:
+- **Athletes:** For traditional physical sports players managing local games.
+- **Esports (The Nexus):** A dedicated ecosystem (`EsportsProfile.js`) capturing Gamertags, specific competitive titles (e.g., *Valorant*, *CS2*, *League of Legends*), regional locking, game ranks, and KD ratios.
+
+### 💰 Unified Global Economy & Store
+A platform-wide gamification system rewards users for engagement (creating events, winning tournaments, etc.).
+- **Point Transactions:** Managed heavily via the `PointTransaction.js` model, logging all point inflows and outflows.
+- **Nexus Market:** Uses the `Reward.js` and `Redemption.js` models to handle a real-world storefront where users can exchange platform points for gift cards, merchandise, or digital items. Admin fulfillment pages securely process these ledgers.
+
+### �️ Physical Operations: Events & Venues
+- **Event Matchmaking:** The `eventModel.js` handles physical gathering logic including sport types, geographic locations, hard participant limits, required skill levels, and date scheduling.
+- **Venue Directory & Booking:** Driven by `venueModel.js`, allowing administrators to list real-world facilities complete with hourly logic, pricing variants, available amenities, and booking integrations.
+
+### 🎮 Digital Operations: Esports Tournaments
+- Dedicated tournament structures (`Tournament.js`) handling digital bracket generation, entry fees (costing platform points), lobby sizing, and automated prize pool distribution to winners. 
+
+### 💬 Social & Community
+- **Persistent Communities:** `communityModel.js` enables users to establish ongoing groups, featuring member roles, posts, and community-wide announcements.
+- **Real-Time WebSockets:** `Socket.io` drives real-time event chats, active presence indicators, notifications (`notificationModel.js`), and instant matchmaking updates.
+- **Global Leaderboards:** Competitive tracking powered by `leaderboardModel.js` calculating dynamic ranks and percentiles based on user points and match win rates.
 
 ---
 
-## Project Overview
+## Technical Infrastructure
 
-PLAYMEET is a comprehensive web application that brings together athletes, event organizers, and sports enthusiasts. The platform provides tools for event management, community building, venue discovery, and real-time communication—all with a modern, responsive interface.
+The platform leverages a modern, highly-scalable open-source stack to handle concurrency and rich UI demands.
 
----
+### Frontend Application (Client)
+- **Framework:** React 18 powered by Vite.
+- **Routing:** React Router DOM v6.
+- **Styling UI:** Tailwind CSS combined with Radix UI headless components for accessible, dynamic dark/light mode switching.
+- **Animations:** Framer Motion for layout transitions and scroll effects.
+- **State & Data Handling:** React Hook Form accompanied by Zod for strict client-schema validations.
+- **Visualizations:** Recharts for admin analytic dashboards.
+- **Real-time Engine:** Socket.io-client.
 
-## Key Features
-
-### Authentication & Security
-Secure user authentication system with industry-standard practices. Users can register, login, and manage their profiles with complete security. The platform uses JWT tokens stored in HTTP-only cookies to prevent XSS attacks, bcrypt for password hashing, and implements multi-tier rate limiting through Upstash Redis to protect against brute force attacks and API abuse. Role-based access control separates regular users from administrators.
-
-- JWT authentication with HTTP-only cookies
-- Password hashing with bcrypt
-- Multi-tier rate limiting via Upstash Redis (global, auth, API, uploads)
-- Role-based access control (User/Admin)
-
-### Event Management
-The core feature of PLAYMEET—a complete event lifecycle management system. Users can create sports events with detailed information including sport type, location, date/time, skill level requirements, and participant limits. Event creators can upload multiple images, define custom rules, and specify required equipment. Participants can join events, and once joined, they gain access to a real-time chat room to coordinate with other participants.
-
-- Full CRUD operations for sports events
-- Multi-image uploads via Cloudinary
-- Event types: Casual, Tournament, Training
-- Participant management with capacity limits
-- Real-time event chat with Socket.io
-- Custom rules and equipment lists
-
-### Venue System
-Discover and explore sports venues in your area. Each venue profile includes comprehensive details such as available amenities, pricing information, operating hours, and location data. Users can rate and review venues based on their experiences, helping others make informed decisions. Administrators can add and manage venue listings to keep the directory up-to-date.
-
-- Venue discovery with filtering options
-- Rating and review system
-- Venue details (amenities, pricing, hours, location)
-- Admin venue management
-
-### Community Features
-Build and join sports communities centered around specific sports, locations, or interests. Community creators can set descriptions, rules, and manage membership. Members can create posts, share updates, and engage through likes and comments. This feature fosters long-term connections between athletes beyond individual events.
-
-- Create and manage sports communities
-- Post creation with likes and comments
-- Member management and community roles
-- Community-specific content feeds
-
-### Real-time Communication
-Seamless real-time messaging powered by Socket.io WebSocket technology. Each event has its own dedicated chat room where participants can communicate instantly. The system shows typing indicators so users know when others are composing messages, displays join/leave notifications to track participant activity, and supports emoji reactions for expressive communication.
-
-- Event chat rooms powered by Socket.io
-- Typing indicators and user presence
-- Join/leave notifications
-- Emoji support in messages
-
-### Leaderboard & Achievements
-A gamification system that rewards active participation. Users earn points for creating events, joining events, and engaging with the community. The leaderboard ranks users based on their accumulated points, while achievement badges recognize specific milestones like "Creator" for organizing events, "Team Player" for frequent participation, and "Enthusiast" for community engagement.
-
-- Points-based ranking system
-- Achievement badges (Creator, Team Player, Enthusiast, etc.)
-- User statistics tracking
-- Progress milestones
-
-### Notifications
-Stay informed with a comprehensive notification system. Real-time in-app notifications alert users to event updates, new participants, chat messages, and community activity. Important notifications are also sent via email using professionally designed templates. Administrators can send bulk notifications to announce platform-wide updates or important information.
-
-- Real-time notifications via Socket.io
-- Email notifications with Nodemailer
-- Bulk notification system for admins
-- Mark as read functionality
-
-### Admin Dashboard
-A powerful administrative interface for platform management. Admins can search, filter, and manage user accounts, moderate events and venues, and monitor platform health through analytics dashboards. The system can generate PDF reports for data analysis, and bulk notification tools enable efficient communication with the entire user base.
-
-- User management with search and filters
-- Event and venue moderation
-- Platform statistics and analytics
-- PDF report generation with PDFKit
-- Bulk notification dispatch
+### Backend Services (Server)
+- **Core Engine:** Node.js with Express 5 framework.
+- **Database Architecture:** MongoDB via Mongoose ODM.
+- **Authentication:** JSON Web Tokens (JWT) secured via HTTP-only cookies and bcryptjs payload hashing.
+- **Security & Rate Limiting:** Upstash Redis handling distributed rate-limits (Global, Auth circuits, and API thresholding).
+- **Media Delivery:** Cloudinary integration connected through Multer for fast asset uploads (user avatars, event banners, venue layouts).
+- **Notifications Engine:** Nodemailer for automated transactional emails.
+- **Document Generation:** PDFKit implemented for generating downloadable admin reports.
+- **Schema Validation:** Zod ensuring type-safety on API payload ingestions.
 
 ---
 
-## Tech Stack
+## Application Scripts
+From the root directories, you can spin up the platform using:
 
-### Frontend
-- **React 18** with Vite
-- **Tailwind CSS** for styling
-- **Radix UI** for accessible components
-- **Framer Motion** for animations
-- **React Hook Form** + **Zod** for form validation
-- **Recharts** for data visualization
-- **Socket.io Client** for real-time features
-- **Axios** for HTTP requests
-- **React Router v6** for navigation
+**Backend:**
+```bash
+cd server
+npm install
+npm run dev
+```
 
-### Backend
-- **Node.js** with **Express 5**
-- **MongoDB** with **Mongoose**
-- **Socket.io** for WebSocket communication
-- **JWT** + **bcrypt** for authentication
-- **Cloudinary** for media storage
-- **Nodemailer** for email services
-- **Upstash Redis** for rate limiting
-- **PDFKit** for report generation
-- **Zod** for server-side validation
-
-<!-- ### Mobile (Expo)
-- **React Native** with **Expo Router**
-- **NativeWind** (Tailwind for React Native)
-- **TypeScript** -->
-
----
-
-## Live Demo & Repository
-
-- **Live Demo:** [PLAYMEET](https://sports-buddy2.vercel.app)
-- **GitHub:** [github.com/imprince26/SportsBuddy2](https://github.com/imprince26/SportsBuddy2)
-
----
-
-**Developed by [Prince Patel](https://github.com/imprince26)**
+**Frontend:**
+```bash
+cd client
+npm install
+npm run dev
+```

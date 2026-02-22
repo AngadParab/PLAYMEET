@@ -97,10 +97,18 @@ const Profile = () => {
       name: "",
       username: "",
       email: "",
-      bio: "",
-      location: { city: "", state: "", country: "" },
       socialLinks: { facebook: "", twitter: "", instagram: "" },
-      sportsPreferences: [],
+      athleteProfile: {
+        bio: "",
+        location: { city: "", state: "", country: "" },
+        sportsPreferences: [],
+      },
+      esportsProfile: {
+        gamerTag: "",
+        gamingBio: "",
+        gameTitles: [],
+        connectedAccounts: { steam: "", discord: "", xbox: "", playstation: "", riot: "" },
+      },
     },
   })
 
@@ -110,7 +118,16 @@ const Profile = () => {
     remove: removeSport,
   } = useFieldArray({
     control,
-    name: "sportsPreferences",
+    name: "athleteProfile.sportsPreferences",
+  })
+
+  const {
+    fields: gameFields,
+    append: appendGame,
+    remove: removeGame,
+  } = useFieldArray({
+    control,
+    name: "esportsProfile.gameTitles",
   })
 
   const achievementForm = useForm({
@@ -146,10 +163,18 @@ const Profile = () => {
         name: user.name || "",
         username: user.username || "",
         email: user.email || "",
-        bio: user.bio || "",
-        location: user.location || { city: "", state: "", country: "" },
         socialLinks: user.socialLinks || { facebook: "", twitter: "", instagram: "" },
-        sportsPreferences: user.sportsPreferences || [],
+        athleteProfile: {
+          bio: user.athleteProfile?.bio || "",
+          location: user.athleteProfile?.location || { city: "", state: "", country: "" },
+          sportsPreferences: user.athleteProfile?.sportsPreferences || [],
+        },
+        esportsProfile: {
+          gamerTag: user.esportsProfile?.gamerTag || "",
+          gamingBio: user.esportsProfile?.gamingBio || "",
+          gameTitles: user.esportsProfile?.gameTitles || [],
+          connectedAccounts: user.esportsProfile?.connectedAccounts || { steam: "", discord: "", xbox: "", playstation: "", riot: "" },
+        },
       })
       setAvatarPreview(user.avatar?.url)
       setCoverImagePreview(user.coverImage?.url || "")
@@ -464,16 +489,39 @@ const Profile = () => {
                       />
                       {errors.email && <p className="text-destructive text-xs">{errors.email.message}</p>}
                     </div>
-                    <div className="md:col-span-2 space-y-2">
-                      <Label htmlFor="bio">Bio</Label>
-                      <Textarea
-                        id="bio"
-                        {...register("bio")}
-                        rows={4}
-                        placeholder="Tell us about yourself..."
-                      />
-                      {errors.bio && <p className="text-destructive text-xs">{errors.bio.message}</p>}
-                    </div>
+                    {!isEsports ? (
+                      <div className="md:col-span-2 space-y-2">
+                        <Label htmlFor="athleteProfile.bio">Athlete Bio</Label>
+                        <Textarea
+                          id="athleteProfile.bio"
+                          {...register("athleteProfile.bio")}
+                          rows={4}
+                          placeholder="Tell us about your physical sports journey..."
+                        />
+                        {errors.athleteProfile?.bio && <p className="text-destructive text-xs">{errors.athleteProfile.bio.message}</p>}
+                      </div>
+                    ) : (
+                      <div className="md:col-span-2 space-y-2">
+                        <Label htmlFor="esportsProfile.gamingBio">Gaming Bio</Label>
+                        <Textarea
+                          id="esportsProfile.gamingBio"
+                          {...register("esportsProfile.gamingBio")}
+                          rows={4}
+                          placeholder="Tell us about your gaming journey..."
+                        />
+                        {errors.esportsProfile?.gamingBio && <p className="text-destructive text-xs">{errors.esportsProfile.gamingBio.message}</p>}
+                      </div>
+                    )}
+                    {isEsports && (
+                      <div className="md:col-span-2 space-y-2">
+                        <Label htmlFor="esportsProfile.gamerTag">Gamer Tag</Label>
+                        <Input
+                          id="esportsProfile.gamerTag"
+                          {...register("esportsProfile.gamerTag")}
+                          placeholder="Your gamer tag"
+                        />
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div>
@@ -498,20 +546,33 @@ const Profile = () => {
                       </div>
                     </div>
 
-                    {user.bio && (
+                    {(!isEsports && user.athleteProfile?.bio) && (
                       <div className="mb-6 max-w-2xl">
                         <p className="text-muted-foreground leading-relaxed">
-                          {user.bio}
+                          {user.athleteProfile.bio}
+                        </p>
+                      </div>
+                    )}
+                    {(isEsports && user.esportsProfile?.gamingBio) && (
+                      <div className="mb-6 max-w-2xl">
+                        <p className="text-muted-foreground leading-relaxed">
+                          {user.esportsProfile.gamingBio}
                         </p>
                       </div>
                     )}
 
                     <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
-                      {(user.location?.city || user.location?.state || user.location?.country) && (
+                      {isEsports && user.esportsProfile?.gamerTag && (
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-4 h-4" />
+                          <span>{user.esportsProfile.gamerTag}</span>
+                        </div>
+                      )}
+                      {!isEsports && (user.athleteProfile?.location?.city || user.athleteProfile?.location?.state || user.athleteProfile?.location?.country) && (
                         <div className="flex items-center gap-2">
                           <MapPin className="w-4 h-4" />
                           <span>
-                            {[user.location?.city, user.location?.state, user.location?.country]
+                            {[user.athleteProfile.location?.city, user.athleteProfile.location?.state, user.athleteProfile.location?.country]
                               .filter(Boolean)
                               .join(", ")}
                           </span>

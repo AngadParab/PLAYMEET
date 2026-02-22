@@ -7,62 +7,70 @@ export const getLeaderboard = async (req, res) => {
   try {
     const {
       category = "overall",
-      timeframe = "all",
       page = 1,
       limit = 50
     } = req.query;
 
-    const query = { category };
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Time-based filtering
-    let dateFilter = {};
-    if (timeframe === "monthly") {
-      const currentMonth = new Date().getMonth() + 1;
-      const currentYear = new Date().getFullYear();
-      // For monthly, we'd need to adjust query based on monthly stats
+    let query = {};
+    if (category === "esports") {
+      query = { "esportsProfile.gamerTag": { $exists: true, $ne: "" } };
+    } else if (category === "athletes") {
+      query = { "athleteProfile": { $exists: true } };
     }
 
-    const leaderboard = await Leaderboard.find(query)
-      .populate({
-        path: "user",
-        select: "name avatar username location.city role",
-        match: { role: { $ne: "admin" } }
-      })
-      .sort({ points: -1, eventsParticipated: -1 })
+    const users = await User.find(query)
+      .select("-password")
+      .populate("participatedEvents")
+      .populate("createdEvents")
+      .sort({ lifetimePoints: -1 })
       .skip(skip)
       .limit(parseInt(limit))
       .lean();
 
-    // Filter out entries where user is null (admin users filtered by populate match)
-    const filteredLeaderboard = leaderboard.filter(entry => entry.user !== null);
+    const filteredUsers = users.filter(u => u.role !== "admin");
 
-    // Add rankings
-    const leaderboardWithRanks = filteredLeaderboard.map((entry, index) => ({
-      ...entry,
-      rank: skip + index + 1,
-      isCurrentUser: entry.user?._id.toString() === req.user?.id
-    }));
+    const leaderboardWithRanks = filteredUsers.map((user, index) => {
+      const points = user.lifetimePoints || 0;
+      return {
+        _id: user._id,
+        user: {
+          _id: user._id,
+          name: user.name,
+          username: user.username,
+          avatar: user.avatar
+        },
+        points: points,
+        rank: skip + index + 1,
+        level: { current: Math.floor(points / 100) + 1, experience: points % 100, nextLevelExp: 100 },
+        eventsParticipated: user.participatedEvents?.length || 0,
+        eventsCreated: user.createdEvents?.length || 0,
+        streak: { current: 0, longest: 0 },
+        isCurrentUser: user._id.toString() === req.user?.id
+      };
+    });
 
-    const total = await Leaderboard.countDocuments(query);
+    const total = await User.countDocuments({ ...query, role: { $ne: "admin" } });
 
-    // Get current user's position if not in current page
     let currentUserPosition = null;
     if (req.user) {
-      const userEntry = await Leaderboard.findOne({
-        user: req.user.id,
-        category
-      }).populate("user", "name avatar username");
-
-      if (userEntry) {
-        const userRank = await Leaderboard.countDocuments({
-          category,
-          points: { $gt: userEntry.points }
+      const currUser = await User.findById(req.user.id).populate("participatedEvents").populate("createdEvents");
+      if (currUser && currUser.role !== "admin") {
+        const userRank = await User.countDocuments({
+          ...query,
+          role: { $ne: "admin" },
+          lifetimePoints: { $gt: currUser.lifetimePoints || 0 }
         }) + 1;
 
         currentUserPosition = {
-          ...userEntry.toObject(),
+          _id: currUser._id,
+          user: { _id: currUser._id, name: currUser.name, avatar: currUser.avatar, username: currUser.username },
+          points: currUser.lifetimePoints || 0,
           rank: userRank,
+          level: { current: Math.floor((currUser.lifetimePoints || 0) / 100) + 1, experience: (currUser.lifetimePoints || 0) % 100, nextLevelExp: 100 },
+          eventsParticipated: currUser.participatedEvents?.length || 0,
+          eventsCreated: currUser.createdEvents?.length || 0,
           isCurrentUser: true
         };
       }
@@ -79,86 +87,49 @@ export const getLeaderboard = async (req, res) => {
         hasNext: parseInt(page) < Math.ceil(total / parseInt(limit)),
         hasPrev: parseInt(page) > 1
       },
-      stats: {
-        totalParticipants: total,
-        category,
-        timeframe
-      }
+      stats: { totalParticipants: total, category }
     });
   } catch (error) {
-    console.error("Leaderboard error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching leaderboard",
-      error: error.message,
-      // Return empty data structure on error
-      data: [],
-      pagination: {
-        currentPage: 1,
-        totalPages: 1,
-        total: 0,
-        hasNext: false,
-        hasPrev: false
-      }
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Get user stats
 export const getUserStats = async (req, res) => {
   try {
     const userId = req.params.userId || req.user.id;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    const userStats = await Leaderboard.find({ user: userId })
-      .populate("user", "name avatar username")
-      .lean();
+    const points = user.lifetimePoints || 0;
+    const categories = ["overall", "athletes", "esports"];
 
-    if (!userStats.length) {
-      // Create initial stats if none exist
-      const categories = ["overall", "Football", "Basketball", "Tennis", "Running", "Cycling", "Swimming"];
-
-      for (const category of categories) {
-        await Leaderboard.create({
-          user: userId,
-          category,
-          points: 0
-        });
-      }
-
-      return res.json({
-        success: true,
-        data: categories.map(category => ({
-          user: { _id: userId },
-          category,
-          points: 0,
-          rank: null,
-          level: { current: 1, experience: 0, nextLevelExp: 100 }
-        }))
-      });
-    }
-
-    // Calculate ranks for each category
     const statsWithRanks = await Promise.all(
-      userStats.map(async (stat) => {
-        const rank = await Leaderboard.countDocuments({
-          category: stat.category,
-          points: { $gt: stat.points }
+      categories.map(async (category) => {
+        let query = { role: { $ne: "admin" } };
+        if (category === "esports") {
+          query["esportsProfile.gamerTag"] = { $exists: true, $ne: "" };
+        } else if (category === "athletes") {
+          query["athleteProfile"] = { $exists: true };
+        }
+
+        const rank = await User.countDocuments({
+          ...query,
+          lifetimePoints: { $gt: points }
         }) + 1;
 
-        return { ...stat, rank };
+        return {
+          user: { _id: userId },
+          category,
+          points,
+          rank,
+          level: { current: Math.floor(points / 100) + 1, experience: points % 100, nextLevelExp: 100 }
+        };
       })
     );
 
-    res.json({
-      success: true,
-      data: statsWithRanks
-    });
+    res.json({ success: true, data: statsWithRanks });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching user stats",
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -285,25 +256,20 @@ export const getCategories = async (req, res) => {
   try {
     const categories = [
       { id: "overall", name: "Overall", icon: "🏆" },
-      { id: "Football", name: "Football", icon: "⚽" },
-      { id: "Basketball", name: "Basketball", icon: "🏀" },
-      { id: "Tennis", name: "Tennis", icon: "🎾" },
-      { id: "Cricket", name: "Cricket", icon: "🏏" },
-      { id: "Badminton", name: "Badminton", icon: "🏸" },
-      { id: "Running", name: "Running", icon: "🏃" },
-      { id: "Cycling", name: "Cycling", icon: "🚴" },
-      { id: "Swimming", name: "Swimming", icon: "🏊" },
-      { id: "Volleyball", name: "Volleyball", icon: "🏐" }
+      { id: "athletes", name: "Athletes", icon: "⚽" },
+      { id: "esports", name: "Esports", icon: "🎮" }
     ];
 
-    // Get participant counts for each category
     const categoriesWithStats = await Promise.all(
       categories.map(async (category) => {
-        const participantCount = await Leaderboard.countDocuments({
-          category: category.id,
-          points: { $gt: 0 }
-        });
+        let query = { role: { $ne: "admin" } };
+        if (category.id === "esports") {
+          query["esportsProfile.gamerTag"] = { $exists: true, $ne: "" };
+        } else if (category.id === "athletes") {
+          query["athleteProfile"] = { $exists: true };
+        }
 
+        const participantCount = await User.countDocuments(query);
         return {
           ...category,
           participants: participantCount
@@ -324,345 +290,99 @@ export const getCategories = async (req, res) => {
   }
 };
 
-// Get leaderboard by sport
+// getLeaderboardBySport mapped to the new API format (esports/athletes) is handled by category already
+// But if they query /sport/:sport, we can just redirect to getLeaderboard
 export const getLeaderboardBySport = async (req, res) => {
-  try {
-    const { sport } = req.params;
-    const {
-      timeframe = "all",
-      page = 1,
-      limit = 50
-    } = req.query;
-
-    const query = { category: sport };
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    // Time-based filtering
-    let dateFilter = {};
-    if (timeframe === "monthly") {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-      dateFilter.updatedAt = { $gte: startOfMonth };
-    } else if (timeframe === "weekly") {
-      const startOfWeek = new Date();
-      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-      startOfWeek.setHours(0, 0, 0, 0);
-      dateFilter.updatedAt = { $gte: startOfWeek };
-    }
-
-    const combinedQuery = { ...query, ...dateFilter };
-
-    const leaderboard = await Leaderboard.find(combinedQuery)
-      .populate({
-        path: "user",
-        select: "name avatar username location.city sportsPreferences role",
-        match: { role: { $ne: "admin" } }
-      })
-      .sort({ points: -1, eventsParticipated: -1 })
-      .skip(skip)
-      .limit(parseInt(limit))
-      .lean();
-
-    // Filter out entries where user is null (admin users)
-    const filteredLeaderboard = leaderboard.filter(entry => entry.user !== null);
-
-    // Add rankings
-    const leaderboardWithRanks = filteredLeaderboard.map((entry, index) => ({
-      ...entry,
-      rank: skip + index + 1,
-      isCurrentUser: entry.user?._id?.toString() === req.user?.id
-    }));
-
-    const total = await Leaderboard.countDocuments(combinedQuery);
-
-    // Get sport-specific stats
-    const sportStats = await Leaderboard.aggregate([
-      { $match: { category: sport } },
-      {
-        $group: {
-          _id: null,
-          totalParticipants: { $sum: 1 },
-          averagePoints: { $avg: "$points" },
-          totalEvents: { $sum: "$eventsParticipated" },
-          topScore: { $max: "$points" }
-        }
-      }
-    ]);
-
-    res.json({
-      success: true,
-      data: leaderboardWithRanks,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(total / parseInt(limit)),
-        total,
-        hasNext: parseInt(page) < Math.ceil(total / parseInt(limit)),
-        hasPrev: parseInt(page) > 1
-      },
-      stats: {
-        sport,
-        timeframe,
-        ...(sportStats.length > 0 ? sportStats[0] : {
-          totalParticipants: 0,
-          averagePoints: 0,
-          totalEvents: 0,
-          topScore: 0
-        })
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching sport leaderboard",
-      error: error.message
-    });
-  }
+  req.query.category = req.params.sport;
+  return getLeaderboard(req, res);
 };
 
-// Get user ranking
 export const getUserRanking = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { category = "overall" } = req.query;
 
-    const userStats = await Leaderboard.findOne({
-      user: userId,
-      category
-    }).populate("user", "name avatar username");
+    const currUser = await User.findById(userId).populate("participatedEvents").populate("createdEvents");
+    if (!currUser) return res.status(404).json({ success: false, message: "User not found" });
 
-    if (!userStats) {
-      return res.status(404).json({
-        success: false,
-        message: "User stats not found"
-      });
-    }
-
-    // Calculate rank
-    const rank = await Leaderboard.countDocuments({
-      category,
-      points: { $gt: userStats.points }
+    const rank = await User.countDocuments({
+      role: { $ne: "admin" },
+      lifetimePoints: { $gt: currUser.lifetimePoints || 0 }
     }) + 1;
 
-    // Get total participants in category
-    const totalParticipants = await Leaderboard.countDocuments({
-      category,
-      points: { $gte: 0 }
-    });
+    const totalParticipants = await User.countDocuments({ role: { $ne: "admin" } });
+    const percentile = totalParticipants > 1 ? Math.round((1 - (rank - 1) / totalParticipants) * 100) : 100;
 
-    // Get percentile
-    const percentile = totalParticipants > 1
-      ? Math.round((1 - (rank - 1) / totalParticipants) * 100)
-      : 100;
-
-    // Get nearby competitors (3 above, 3 below)
-    const nearbyCompetitors = await Leaderboard.find({
-      category,
-      points: {
-        $gte: Math.max(0, userStats.points - 500),
-        $lte: userStats.points + 500
-      }
-    })
-      .populate("user", "name avatar username")
-      .sort({ points: -1 })
+    const nearbyCompetitorsRaw = await User.find({ role: { $ne: "admin" } })
+      .select("name avatar username lifetimePoints")
+      .sort({ lifetimePoints: -1 })
+      .skip(Math.max(0, rank - 4))
       .limit(7)
       .lean();
+
+    const nearbyCompetitors = nearbyCompetitorsRaw.map((u, i) => ({
+      _id: u._id,
+      user: { _id: u._id, name: u.name, username: u.username, avatar: u.avatar },
+      points: u.lifetimePoints || 0,
+    }));
 
     res.json({
       success: true,
       data: {
-        ...userStats.toObject(),
+        _id: currUser._id,
+        user: { _id: currUser._id, name: currUser.name, avatar: currUser.avatar, username: currUser.username },
+        points: currUser.lifetimePoints || 0,
         rank,
+        level: { current: Math.floor((currUser.lifetimePoints || 0) / 100) + 1 },
         totalParticipants,
         percentile,
-        nearbyCompetitors: nearbyCompetitors.map((competitor, index) => ({
-          ...competitor,
-          rank: rank - 3 + index
-        }))
+        eventsParticipated: currUser.participatedEvents?.length || 0,
+        eventsCreated: currUser.createdEvents?.length || 0,
+        streak: { current: 0 },
+        nearbyCompetitors
       }
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching user ranking",
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 // Get leaderboard stats
 export const getLeaderboardStats = async (req, res) => {
   try {
-    const overallStats = await Leaderboard.aggregate([
-      {
-        $group: {
-          _id: "$category",
-          totalParticipants: { $sum: 1 },
-          averagePoints: { $avg: "$points" },
-          totalPoints: { $sum: "$points" },
-          totalEvents: { $sum: "$eventsParticipated" },
-          maxPoints: { $max: "$points" }
-        }
-      },
-      { $sort: { totalParticipants: -1 } }
-    ]);
-
-    // Get top performers across all categories
-    const topPerformers = await Leaderboard.find({ category: "overall" })
-      .populate("user", "name avatar username")
-      .sort({ points: -1 })
-      .limit(5)
-      .lean();
-
-    // Get recent activity (users who gained points recently)
-    const recentActivity = await Leaderboard.find({
-      updatedAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
-    })
-      .populate("user", "name avatar username")
-      .sort({ updatedAt: -1 })
-      .limit(10)
-      .lean();
+    const totalParticipants = await User.countDocuments({ role: { $ne: "admin" } });
 
     // Monthly stats
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const monthlyStats = await Leaderboard.aggregate([
-      {
-        $match: {
-          updatedAt: { $gte: startOfMonth }
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          activeUsers: { $addToSet: "$user" },
-          totalPointsEarned: { $sum: "$points" },
-          totalEventsParticipated: { $sum: "$eventsParticipated" }
-        }
-      },
-      {
-        $project: {
-          activeUsers: { $size: "$activeUsers" },
-          totalPointsEarned: 1,
-          totalEventsParticipated: 1
-        }
-      }
-    ]);
+    const activeUsers = await User.countDocuments({
+      role: { $ne: "admin" },
+      updatedAt: { $gte: startOfMonth }
+    });
 
     res.json({
       success: true,
       data: {
-        categoryStats: overallStats,
-        topPerformers: topPerformers.map((performer, index) => ({
-          ...performer,
-          rank: index + 1
-        })),
-        recentActivity,
-        monthlyStats: monthlyStats.length > 0 ? monthlyStats[0] : {
-          activeUsers: 0,
+        categoryStats: [
+          { _id: "overall", totalParticipants }
+        ],
+        topPerformers: [],
+        recentActivity: [],
+        monthlyStats: {
+          activeUsers,
           totalPointsEarned: 0,
           totalEventsParticipated: 0
         }
       }
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching leaderboard stats",
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Update user score (for admin/system use)
 export const updateUserScore = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { points, category = "overall", reason } = req.body;
-
-    if (!points || typeof points !== 'number') {
-      return res.status(400).json({
-        success: false,
-        message: "Valid points value is required"
-      });
-    }
-
-    // Check if user exists
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found"
-      });
-    }
-
-    // Update user stats
-    let userStats = await Leaderboard.findOne({ user: userId, category });
-    if (!userStats) {
-      userStats = new Leaderboard({
-        user: userId,
-        category,
-        points: 0
-      });
-    }
-
-    const oldPoints = userStats.points;
-    userStats.points += points;
-
-    // Update level if points increased
-    if (points > 0) {
-      userStats.level.experience += points;
-      while (userStats.level.experience >= userStats.level.nextLevelExp) {
-        userStats.level.experience -= userStats.level.nextLevelExp;
-        userStats.level.current += 1;
-        userStats.level.nextLevelExp = Math.floor(userStats.level.nextLevelExp * 1.5);
-      }
-    }
-
-    // Add to history
-    userStats.pointsHistory.push({
-      points,
-      reason: reason || "Manual adjustment",
-      date: new Date()
-    });
-
-    await userStats.save();
-
-    // Also update overall if not overall category
-    if (category !== "overall") {
-      let overallStats = await Leaderboard.findOne({ user: userId, category: "overall" });
-      if (!overallStats) {
-        overallStats = new Leaderboard({
-          user: userId,
-          category: "overall",
-          points: 0
-        });
-      }
-      overallStats.points += points;
-      await overallStats.save();
-    }
-
-    res.json({
-      success: true,
-      message: "User score updated successfully",
-      data: {
-        userId,
-        category,
-        oldPoints,
-        newPoints: userStats.points,
-        pointsAdded: points,
-        currentLevel: userStats.level.current
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error updating user score",
-      error: error.message
-    });
-  }
+  return res.status(400).json({ success: false, message: "Use PointService to update user score instead" });
 };
 
 // Get trophies/badges

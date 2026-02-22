@@ -52,6 +52,10 @@ const GamerCard = ({ athlete, onFollow, isFollowing: initialIsFollowing, current
         return name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?';
     };
 
+    // Safely extract relevant nested fields
+    const userObj = athlete.user || {};
+    const primaryGame = athlete.games && athlete.games.length > 0 ? athlete.games[0] : null;
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -76,14 +80,15 @@ const GamerCard = ({ athlete, onFollow, isFollowing: initialIsFollowing, current
 
                 {/* Avatar Overlapping Header */}
                 <div className="px-5 -mt-10 mb-3 flex justify-between items-end">
-                    <Link to={`/profile/${athlete._id}`}>
+                    <Link to={`/profile/${userObj._id || athlete._id}`}>
                         <div className="relative">
                             <Avatar className="w-20 h-20 border-4 border-[#09090b] shadow-lg ring-2 ring-purple-500/50">
-                                <AvatarImage src={athlete.avatar?.url} alt={athlete.name} className="object-cover" />
+                                <AvatarImage src={userObj.avatar?.url} alt={athlete.gamertag || userObj.name} className="object-cover" />
                                 <AvatarFallback className="bg-purple-900/50 text-purple-200 font-bold text-xl border border-purple-500/30">
-                                    {getInitials(athlete.name)}
+                                    {getInitials(athlete.gamertag || userObj.name)}
                                 </AvatarFallback>
                             </Avatar>
+                            {/* Online status mock / placeholder */}
                             {athlete.isOnline && (
                                 <span className="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-4 border-[#09090b] rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
                             )}
@@ -95,34 +100,35 @@ const GamerCard = ({ athlete, onFollow, isFollowing: initialIsFollowing, current
                 <CardContent className="px-5 pb-4 flex-grow space-y-4">
                     {/* Name & Username */}
                     <div>
-                        <Link to={`/profile/${athlete._id}`}>
+                        <Link to={`/profile/${userObj._id || athlete._id}`}>
                             <h3 className="font-bold font-heading text-white group-hover:text-cyan-400 transition-colors truncate text-xl">
-                                {athlete.name}
+                                {athlete.gamertag || userObj.name}
                             </h3>
                         </Link>
-                        <p className="text-sm text-purple-300/80 font-medium">@{athlete.username || athlete.name.replace(/\s+/g, '').toLowerCase()}</p>
+                        <p className="text-sm text-purple-300/80 font-medium">@{userObj.username || (athlete.gamertag?.replace(/\s+/g, '').toLowerCase() || 'player')}</p>
                     </div>
 
                     {/* Game Titles Tags */}
                     <div className="flex flex-wrap gap-2">
-                        {athlete.gameInfo ? (
+                        {primaryGame ? (
                             <Badge variant="secondary" className="bg-purple-500/10 text-purple-300 border-purple-500/20 hover:bg-purple-500/20">
                                 <Gamepad2 className="w-3 h-3 mr-1" />
-                                {athlete.gameInfo.title}
+                                {primaryGame.gameTitle}
                             </Badge>
-                        ) : athlete.sportsPreferences?.slice(0, 3).map((pref, idx) => (
-                            <Badge
-                                key={idx}
-                                variant="secondary"
-                                className="bg-purple-500/10 text-purple-300 border-purple-500/20 hover:bg-purple-500/20"
-                            >
+                        ) : (
+                            <Badge variant="secondary" className="bg-purple-500/10 text-purple-300 border-purple-500/20 hover:bg-purple-500/20">
                                 <Gamepad2 className="w-3 h-3 mr-1" />
-                                {pref.sport}
+                                General
                             </Badge>
-                        ))}
-                        {athlete.role && (
+                        )}
+                        {primaryGame?.role && (
                             <Badge variant="outline" className="border-cyan-500/30 text-cyan-300">
-                                {athlete.role}
+                                {primaryGame.role}
+                            </Badge>
+                        )}
+                        {athlete.region && (
+                            <Badge variant="outline" className="border-white/10 text-gray-400">
+                                {athlete.region}
                             </Badge>
                         )}
                     </div>
@@ -131,25 +137,25 @@ const GamerCard = ({ athlete, onFollow, isFollowing: initialIsFollowing, current
                     <div className="grid grid-cols-3 gap-2 py-3 border-t border-white/5">
                         <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white/5 border border-white/5">
                             <Swords className="w-4 h-4 text-purple-400 mb-1" />
-                            <span className="text-sm font-bold text-white">{athlete.stats?.eventsParticipated || athlete.gameInfo?.rank || "Unranked"}</span>
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wider">Rank/Matches</span>
+                            <span className="text-sm font-bold text-white text-center truncate w-full">{primaryGame?.rank || "Unranked"}</span>
+                            <span className="text-[10px] text-gray-400 uppercase tracking-wider">Rank</span>
                         </div>
                         <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white/5 border border-white/5">
                             <Crosshair className="w-4 h-4 text-red-400 mb-1" />
-                            <span className="text-sm font-bold text-white">{athlete.gameInfo?.kd || (Math.random() * 2 + 1).toFixed(2)}</span>
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wider">K/D</span>
+                            <span className="text-sm font-bold text-white">{athlete.stats?.matchesWon || 0}</span>
+                            <span className="text-[10px] text-gray-400 uppercase tracking-wider">Wins</span>
                         </div>
                         <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white/5 border border-white/5">
                             <Trophy className="w-4 h-4 text-yellow-400 mb-1" />
-                            <span className="text-sm font-bold text-white">{athlete.gameInfo?.winRate || "50%"}</span>
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wider">Win Rate</span>
+                            <span className="text-sm font-bold text-white">{athlete.stats?.tournamentsWon || 0}</span>
+                            <span className="text-[10px] text-gray-400 uppercase tracking-wider">Tourneys</span>
                         </div>
                     </div>
                 </CardContent>
 
                 {/* Footer Actions */}
                 <CardFooter className="px-5 py-4 bg-white/5 border-t border-white/5 gap-3">
-                    <Link to={`/profile/${athlete._id}`} className="flex-1">
+                    <Link to={`/profile/${userObj._id || athlete._id}`} className="flex-1">
                         <Button
                             variant="secondary"
                             className="w-full bg-white/5 hover:bg-white/10 text-white border-0 hover:text-cyan-300 transition-colors"
@@ -157,7 +163,7 @@ const GamerCard = ({ athlete, onFollow, isFollowing: initialIsFollowing, current
                             View Profile
                         </Button>
                     </Link>
-                    {currentUser && currentUser.id !== athlete._id && (
+                    {currentUser && currentUser.id !== (userObj._id || athlete._id) && (
                         <Button
                             size="icon"
                             onClick={handleFollow}

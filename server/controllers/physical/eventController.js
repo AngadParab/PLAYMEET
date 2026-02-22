@@ -2,6 +2,7 @@ import Event from "../../models/eventModel.js";
 import User from "../../models/userModel.js";
 import { cloudinary, deleteImage } from "../../config/cloudinary.js";
 import { completeUserAction, POINT_VALUES } from "../../utils/userStatsHelper.js";
+import PointService from "../../services/PointService.js";
 
 // Create Event Controller
 export const createEvent = async (req, res) => {
@@ -668,6 +669,17 @@ export const updateEvent = async (req, res) => {
       updatedAt: new Date()
     };
 
+    if (req.body.status) {
+      // Validate enum if strictly needed, or just assign
+      updates.status = req.body.status;
+    }
+
+    // Intercept "Completed" status toggle for economy points
+    if (updates.status === "Completed" && event.status !== "Completed" && !event.pointsAwarded) {
+      // We need to fetch participants to reward them. We will do this after the update so we know it succeeded.
+      updates.pointsAwarded = true;
+    }
+
     const updatedEvent = await Event.findByIdAndUpdate(
       req.params.id,
       { $set: updates },
@@ -675,6 +687,11 @@ export const updateEvent = async (req, res) => {
     )
       .populate("createdBy", "name avatar")
       .populate("participants.user", "name avatar");
+
+    // Award economy points if just completed
+    if (updates.pointsAwarded && !event.pointsAwarded) {
+      await PointService.processEventCompletion(updatedEvent);
+    }
 
     const io = req.app.get("io");
     io.to(`event:${event._id}`).emit("eventUpdated", updatedEvent);
